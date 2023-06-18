@@ -13,7 +13,7 @@ Preliminary work were presented in Willenbock et al. (2010). This set of tools e
 this work by providing functional JS code, and by offering a slightly different sampler
 based on a log_2 space of frequencies.
    
-You can find a live demo page at: http://dcousin3.github.io/Bagel/Bagel.html This page lets you
+You can find a live demo page at: http://dcousin3.github.io/Bagel/Bagel.htm This page lets you
 test various functions using a rudimentary interface.
 
    
