@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <meta charset="UTF-8">
+        <title>Bagel Transform</title>
+        <script src="BagelFiles/Bagel.js"></script>
+        <script src="BagelFiles/main.js"></script>
+        <style>
+            canvas        { border: 1px black solid; }
+            img           { border: 1px red solid; }
+            #hiddenCanvas { display: none; } 
+			#rectangle	  { border: 1px gray solid; width: 26px; height: 256px; background:gray; }
+        </style>
+    </head>
+
+    <body>
+        <h1>Bagel: A GUI to test the functions</h1>
+
+        <div >
+            Status: <div id="errfield" style="display: inline; color:red;"></div>
+        </div>
+        
+        <!-- temporary containers-->
+        <canvas id='hiddenCanvas' height=256px width=256px></canvas>
+
+        <br>
+        <div>
+            <div style="display: inline-block; margin-right: 22px; vertical-align: top">
+                1. Original image
+                <br>
+                <canvas id="canvas0" width=256px height=256px></canvas>
+                <br>
+                Load an image: <input type="button" id="draw-cs-btn" value="'CS'">
+                <input type="button" id="draw-grace-btn" value="Grace Helbig">
+                <br>
+                Draw a letter: <input type="text" id="lettre"   value="" size=2><input type="button" id="draw-lettre-btn" value="Draw"><br>
+				Draw a plaid:  <input  type="text" id="plaidfrq" value="" size=10 placeholder="frequency for 4 orientations"><input type="button" id="draw-plaid-btn" value="Draw"><br>
+            </div>
+
+            <div style="display: inline-block; margin-right: 22px; vertical-align: top">
+                2. Transformed image (Log scale: <input type="checkbox" id="logscale" name="logscale" value="true">)
+                <br>
+                <canvas id="canvas1" width="256" height="256"></canvas>
+                <br>
+                Operation to do: <input type="text" id="arg" size=2 placeholder="process to perform" value=0>
+                <input type="text" id ="arglist" size=12 placeholder="additional arguments if needed">
+				<br>
+                Gaussian noise : <input type="text" id="noiseprop" size=2 placeholder="proportion of noise" value=0>
+                <input type="text" id ="nselist" size=12 placeholder="filter if needed (e.g., f:2 for 1/f^2">
+				<br>
+                <input type="button" id="transform-btn" value="Transform the image">
+            </div>
+
+            <div style="display: inline-block; vertical-align: top;">
+                3. Contrasted image
+				<br>
+				<div class="container", style="display: grid; grid-template-columns: 4fr 1fr;">
+					<canvas id="canvas2" width="256" height="256"></canvas>
+					<div id="rectangle">Gray</div>
+				</div>
+                Method: <input type="text" id ="method" size=2 placeholder="contrast method (m)edian or (c)orner">
+				<input type="text" id ="range" size=4 placeholder="range (0..1)">
+				<input type="button" id="method-btn" value="Adjust the contrast">
+			</div>
+        </div>
+ 
+		<h4>Arguments for "Drawing a plaid":</h4>
+            <p>Four numbers for the frequencies at 0, 45, 90 and 135 degrees. Optional is a radius for a gaussian envelop.</p>
+		<h4>Arguments for "Operation to do":</h4>
+        <ul>
+            <li><strong>0- The image without change [with or without noise]</strong>
+            <li><strong>1- Fourier transform of the image</strong>
+            <li>Working with donut filters:<ul>
+                <li><strong>2- donut filter (enter two radii, comma separated, in pixels)</strong>
+                <li><strong>3- donut filter times Fourier image (enter two radii)</strong>
+                <li><strong>4- detransformed donut-filtered image (enter two radii) [with or without noise]</strong>
+            </ul>
+            <li>Working with gauss filters:<ul>
+                <li><strong>5- gauss filter (enter a sigma, in pixels; negative for reversed filter)</strong>
+                <li><strong>6- gauss filter times Fourier image (enter a sigma)</strong>
+                <li><strong>7- detransformed donut-filtered image (enter a sigma) [with or without noise]</strong>
+            </ul>
+            <li>Working with bagel filters:<ul>
+				<li><strong> 8- bagel filter (either manual, followed by k and the desired freqs (e.g., `m:5;5,55`) or random, followed by b and k (e.g., `r:15,5`)</strong>
+				<li><strong> 9- bagel filter times Fourier image</strong>
+				<li><strong>10- detransformed bagel-filtered image [with or without noise]</strong>
+            </ul>
+            <li><strong>99- Untransform the Fourier transform as a check</strong>
+        </ul>
+		<h4>Arguments for "Gaussian noise":</h4>
+            <p>Noise proportion (empty means 0%); optional a 1/f^n filter with f:n e.g., f:1.5.</p>
+		<h4>Arguments for "Method" to contrast image:</h4>
+        <ul>
+            <li>r, for rescale around 0.5 with a range (e.g., 0.5 for a rescaling between 0.25 and 0.75).</li>
+            <li>m, for median adjustment: the image is first rescaled then the intensities are move up or down until the median intensity is 0.5.</li>
+        </ul>
+
+    </body>
+</html>
