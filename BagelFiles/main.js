@@ -78,18 +78,18 @@ var BagelImageAnalysis = (function() {
     }
     function fillCanvasFrom( ctx, matrix ) {
         ctx.clearRect(0, 0, 256, 256); // erase all
-		var ImageData = ctx.getImageData(0, 0, dims[0], dims[1] );
-		for (var i = 0; i < dims[0]; i++) {
-			for (var j = 0; j < dims[1]; j++) {
-				var idx = i*dims[1] + j;
-				for (var c = 0; c < 3; c++) {
-					ImageData.data[4*idx+c] = matrix[idx] ;
-				}
-				// full alpha on the fourth channel
-				ImageData.data[4*idx+3] = 255 ;
-			}
-		}
-		ctx.putImageData(ImageData, 0, 0);
+        var ImageData = ctx.getImageData(0, 0, dims[0], dims[1] );
+        for (var i = 0; i < dims[0]; i++) {
+            for (var j = 0; j < dims[1]; j++) {
+                var idx = i*dims[1] + j;
+                for (var c = 0; c < 3; c++) {
+                    ImageData.data[4*idx+c] = matrix[idx] ;
+                }
+                // full alpha on the fourth channel
+                ImageData.data[4*idx+3] = 255 ;
+            }
+        }
+        ctx.putImageData(ImageData, 0, 0);
     }
 
 
@@ -137,9 +137,9 @@ var BagelImageAnalysis = (function() {
         console.log("===Step 1b: Generating an image from ", lettervalue, "===");
 
         // draw the letter
-		dims = [256, 256] ;
-		ltter = Bagel.letterImg( dims, lettervalue )
-		ltter = ltter.map( x => x.magnitude() );
+        dims = [256, 256] ;
+        ltter = Bagel.letterImg( dims, lettervalue )
+        ltter = ltter.map( x => x.magnitude() );
 
         // make each canvas the image's exact size
         adjustCanvases( dims );
@@ -158,22 +158,22 @@ var BagelImageAnalysis = (function() {
         console.log("===Step 1b: Generating a plaid from ", frequencyvalues, "===");
         
         // check the parameters
-		try {
-			var frqs = frequencyvalues.split(/[,;]/);
-			if ((frqs.length<4)||(frqs.length>5)) {throw new Error("You must provide four even frequencies for 0, 45, 90 and 135 degrees, e.g., `40,0,10,0` (optional: the radius of the envelop, e.g., 40,0,10,0;70)")}
-			frqs  = frqs.map( x => Math.round(parseInt(x, 10)/1)*1 );
-			if (frqs.length == 5)  { var radius = frqs[4]; frqs.pop(); }
-			else { var radius = (256 * 40) }; // i.e., no visible envelop
+        try {
+            var frqs = frequencyvalues.split(/[,;]/);
+            if ((frqs.length<4)||(frqs.length>5)) {throw new Error("You must provide four even frequencies for 0, 45, 90 and 135 degrees, e.g., `40,0,10,0` (optional: the radius of the envelop, e.g., 40,0,10,0;70)")}
+            frqs  = frqs.map( x => Math.round(parseInt(x, 10)/1)*1 );
+            if (frqs.length == 5)  { var radius = frqs[4]; frqs.pop(); }
+            else { var radius = (256 * 40) }; // i.e., no visible envelop
         } catch (e) {
             $s('#errfield').innerHTML = e.message;
-			return;
+            return;
         }
 
         // do the plaid
-		dims = [256, 256] ;
-		var angles = [Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4];
-		plaid = Bagel.plaidImg( dims, angles, frqs, radius )
-		plaid = plaid.map( x => x.magnitude() );
+        dims = [256, 256] ;
+        var angles = [Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4];
+        plaid = Bagel.plaidImg( dims, angles, frqs, radius )
+        plaid = plaid.map( x => x.magnitude() );
 
         // make each canvas the image's exact size
         adjustCanvases( dims );
@@ -194,23 +194,23 @@ var BagelImageAnalysis = (function() {
     //-----------------------------------------------------
     function transformAction(arg, arglist, noiseprop, nselist) {
         console.log("===Step 2: Tranforming the image with args", arg, " along with ", arglist, "-- noise proportion:", noiseprop, nselist, "===");
-		// convert the image to complex numbers.
-		if ( rawImage[0].constructor.name != "Complex") {
-			rawImage = rawImage.map( x => new Bagel.Complex(x, 0.) );
-		}
+        // convert the image to complex numbers.
+        if ( rawImage[0].constructor.name != "Complex") {
+            rawImage = rawImage.map( x => new Bagel.Complex(x, 0.) );
+        }
         try {
             // compute newImage
             switch(arg) {
                 case "0": 
                     console.log("   ...returning the raw image");
                     newImage = rawImage.slice();
-					// adding noise?
-					noiseprop = parseFloat(noiseprop, 10);
-					if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
-					if ((noiseprop > 1)||(noiseprop <= 0))  {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
-					var noisestd = Math.max(...newImage.map( x => x.magnitude() ) ) /4;
-					tempImage = Bagel.gaussianNoisyImg( dims, 1 ) ;
-					
+                    // adding noise?
+                    noiseprop = parseFloat(noiseprop, 10);
+                    if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
+                    if ((noiseprop > 1)||(noiseprop <= 0))  {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
+                    var noisestd = Math.max(...newImage.map( x => x.magnitude() ) ) /4;
+                    tempImage = Bagel.gaussianNoisyImg( dims, 1 ) ;
+                    
                     console.log(nselist == "");
                     if ((nselist != "")) {
                         var nze = nselist.split(/[,;:]/);
@@ -227,16 +227,16 @@ var BagelImageAnalysis = (function() {
                     }
                     tempImage = Bagel.elementWiseTimes( tempImage, noisestd );
 
-					tempImage = Bagel.elementWiseTimes( tempImage, noiseprop );
-					newImage  = Bagel.elementWiseTimes( newImage, 1-noiseprop );
-					newImage  = Bagel.elementWisePlus ( newImage, tempImage );
+                    tempImage = Bagel.elementWiseTimes( tempImage, noiseprop );
+                    newImage  = Bagel.elementWiseTimes( newImage, 1-noiseprop );
+                    newImage  = Bagel.elementWisePlus ( newImage, tempImage );
                     break;
                 case "1": 
                     console.log("   ...returning the Fourier of image");
                     newImage = Bagel.shiftQuadrants( Bagel.FFT2D( rawImage ) );
                     break;
                 
-				// donut filter functions
+                // donut filter functions
                 case "2":
                     console.log("   ...returning a band filter");
                     var bds = arglist.split(/[,;]/);
@@ -265,18 +265,18 @@ var BagelImageAnalysis = (function() {
                     newImage = Bagel.elementWiseTimes(filter, newImage);
                     newImage = Bagel.shiftQuadrants( newImage );
                     newImage = Bagel.invFFT2D( newImage );
-					// adding noise?
-					noiseprop = parseFloat(noiseprop, 10);
-					if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
-					var noisestd = Math.max(...newImage.map( x => x.magnitude() ) ) /4;
-					if ((noiseprop > 1)||(noiseprop <= 0)) {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
-					tempImage = Bagel.gaussianNoisyImg( dims, noisestd ) ;
-					tempImage = Bagel.elementWiseTimes( tempImage, noiseprop );
-					newImage  = Bagel.elementWiseTimes( newImage, 1-noiseprop );
-					newImage  = Bagel.elementWisePlus ( newImage, tempImage );
+                    // adding noise?
+                    noiseprop = parseFloat(noiseprop, 10);
+                    if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
+                    var noisestd = Math.max(...newImage.map( x => x.magnitude() ) ) /4;
+                    if ((noiseprop > 1)||(noiseprop <= 0)) {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
+                    tempImage = Bagel.gaussianNoisyImg( dims, noisestd ) ;
+                    tempImage = Bagel.elementWiseTimes( tempImage, noiseprop );
+                    newImage  = Bagel.elementWiseTimes( newImage, 1-noiseprop );
+                    newImage  = Bagel.elementWisePlus ( newImage, tempImage );
                     break;
 
-				// gaussian filter functions
+                // gaussian filter functions
                 case "5":
                     console.log("   ...returning a gauss filter");
                     var bds = arglist.split(/[,;]/);
@@ -305,93 +305,93 @@ var BagelImageAnalysis = (function() {
                     newImage = Bagel.elementWiseTimes(filter, newImage);
                     newImage = Bagel.shiftQuadrants( newImage );
                     newImage = Bagel.invFFT2D( newImage );
-					// adding noise?
-					noiseprop = parseFloat(noiseprop, 10);
-					if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
-					var noisestd = Math.max(...newImage.map( x => x.magnitude() ) ) /4;
-					if ((noiseprop > 1)||(noiseprop <= 0)) {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
-					tempImage = Bagel.gaussianNoisyImg( dims, noisestd ) ;
-					tempImage = Bagel.elementWiseTimes( tempImage, noiseprop );
-					newImage  = Bagel.elementWiseTimes( newImage, 1-noiseprop );
-					newImage  = Bagel.elementWisePlus ( newImage, tempImage );
+                    // adding noise?
+                    noiseprop = parseFloat(noiseprop, 10);
+                    if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
+                    var noisestd = Math.max(...newImage.map( x => x.magnitude() ) ) /4;
+                    if ((noiseprop > 1)||(noiseprop <= 0)) {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
+                    tempImage = Bagel.gaussianNoisyImg( dims, noisestd ) ;
+                    tempImage = Bagel.elementWiseTimes( tempImage, noiseprop );
+                    newImage  = Bagel.elementWiseTimes( newImage, 1-noiseprop );
+                    newImage  = Bagel.elementWisePlus ( newImage, tempImage );
                     break;
 
-				// bagel filter functions
-				case "8":
+                // bagel filter functions
+                case "8":
                     console.log("   ...returning a bagel filter");
                     var dta = arglist.split(/[,;:]/);
                     if ((dta[0] != "r")&&(dta[0] != "m")) {throw new Error("You must provide a method r (random) or m (manually) as first entry")}
-					var method = dta.shift();
-					dta = dta.map( x => parseInt(x, 10) );
-					if (method == "m") {
-						var k = dta.shift();
-						var mus = dta.slice();
-						var sgs = mus.map( x => x / (2 * k) ); // heuristic
-					} else if (method = "r") {
-						var b = dta.shift();
-						var k = dta.shift();
-						var res = Bagel.bagelSampler( dims, b, k );
-						var mus = res[0];
-						var sgs = mus.map( x => x / (2 * k) ); // heuristic
-					}
-					newImage = Bagel.bagelFilter( dims, mus, sgs );
-					break;
-				case "9":
+                    var method = dta.shift();
+                    dta = dta.map( x => parseInt(x, 10) );
+                    if (method == "m") {
+                        var k = dta.shift();
+                        var mus = dta.slice();
+                        var sgs = mus.map( x => x / (2 * k) ); // heuristic
+                    } else if (method = "r") {
+                        var b = dta.shift();
+                        var k = dta.shift();
+                        var res = Bagel.bagelSampler( dims, b, k );
+                        var mus = res[0];
+                        var sgs = mus.map( x => x / (2 * k) ); // heuristic
+                    }
+                    newImage = Bagel.bagelFilter( dims, mus, sgs );
+                    break;
+                case "9":
                     console.log("   ...merging a bager filter (5) with the Fourier of image (1)");
                     var dta = arglist.split(/[,;:]/);
                     if ((dta[0] != "r")&&(dta[0] != "m")) {throw new Error("You must provide a method r (random) or m (manually) as first entry")}
-					var method = dta.shift();
-					dta = dta.map( x => parseInt(x, 10) );
-					if (method == "m") {
-						var k = dta.shift();
-						var mus = dta.slice();
-						var sgs = mus.map( x => x / (2 * k) ); // heuristic
-					} else if (method = "r") {
-						var b = dta.shift();
-						var k = dta.shift();
-						var res = Bagel.bagelSampler( dims, b, k );
-						var mus = res[0];
-						var sgs = mus.map( x => x / (2 * k) ); // heuristic
-					}
-					filter = Bagel.bagelFilter( dims, mus, sgs );
+                    var method = dta.shift();
+                    dta = dta.map( x => parseInt(x, 10) );
+                    if (method == "m") {
+                        var k = dta.shift();
+                        var mus = dta.slice();
+                        var sgs = mus.map( x => x / (2 * k) ); // heuristic
+                    } else if (method = "r") {
+                        var b = dta.shift();
+                        var k = dta.shift();
+                        var res = Bagel.bagelSampler( dims, b, k );
+                        var mus = res[0];
+                        var sgs = mus.map( x => x / (2 * k) ); // heuristic
+                    }
+                    filter = Bagel.bagelFilter( dims, mus, sgs );
                     newImage = Bagel.FFT2D( rawImage );
                     newImage = Bagel.shiftQuadrants( newImage );
                     newImage = Bagel.elementWiseTimes(filter, newImage);
-					break;
-				case "10":
+                    break;
+                case "10":
                     console.log("   ...untransforming the bagel-filtered image (9)");
                     var dta = arglist.split(/[,;:]/);
                     if ((dta[0] != "r")&&(dta[0] != "m")) {throw new Error("You must provide a method r (random) or m (manually) as first entry")}
-					var method = dta.shift();
-					dta = dta.map( x => parseInt(x, 10) );
-					if (method == "m") {
-						var k = dta.shift();
-						var mus = dta.slice();
-						var sgs = mus.map( x => x / (2 * k) ); // heuristic
-					} else if (method = "r") {
-						var b = dta.shift();
-						var k = dta.shift();
-						var res = Bagel.bagelSampler( dims, b, k );
-						var mus = res[0];
-						var sgs = mus.map( x => x / (2 * k) ); // heuristic
-					}
-					filter = Bagel.bagelFilter( dims, mus, sgs );
+                    var method = dta.shift();
+                    dta = dta.map( x => parseInt(x, 10) );
+                    if (method == "m") {
+                        var k = dta.shift();
+                        var mus = dta.slice();
+                        var sgs = mus.map( x => x / (2 * k) ); // heuristic
+                    } else if (method = "r") {
+                        var b = dta.shift();
+                        var k = dta.shift();
+                        var res = Bagel.bagelSampler( dims, b, k );
+                        var mus = res[0];
+                        var sgs = mus.map( x => x / (2 * k) ); // heuristic
+                    }
+                    filter = Bagel.bagelFilter( dims, mus, sgs );
                     newImage = Bagel.FFT2D( rawImage );
                     newImage = Bagel.shiftQuadrants ( newImage );
                     newImage = Bagel.elementWiseTimes(filter, newImage);
-					
+                    
                     newImage = Bagel.shiftQuadrants( newImage );
                     newImage = Bagel.invFFT2D( newImage );
-					// adding noise?
-					noiseprop = parseFloat(noiseprop, 10);
-					if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
-					var noisestd = Math.max(...newImage.map( x => x.magnitude() ) ) /4;
-					if ((noiseprop > 1)||(noiseprop <= 0)) {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
-					tempImage = Bagel.gaussianNoisyImg( dims, noisestd ) ;
-					tempImage = Bagel.elementWiseTimes( tempImage, noiseprop );
-					newImage  = Bagel.elementWiseTimes( newImage, 1-noiseprop );
-					newImage  = Bagel.elementWisePlus ( newImage, tempImage );
-					break;
+                    // adding noise?
+                    noiseprop = parseFloat(noiseprop, 10);
+                    if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
+                    var noisestd = Math.max(...newImage.map( x => x.magnitude() ) ) /4;
+                    if ((noiseprop > 1)||(noiseprop <= 0)) {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
+                    tempImage = Bagel.gaussianNoisyImg( dims, noisestd ) ;
+                    tempImage = Bagel.elementWiseTimes( tempImage, noiseprop );
+                    newImage  = Bagel.elementWiseTimes( newImage, 1-noiseprop );
+                    newImage  = Bagel.elementWisePlus ( newImage, tempImage );
+                    break;
 
                 case "99": 
                     console.log("   ...inverting the Fourier of image (1)");
@@ -403,14 +403,14 @@ var BagelImageAnalysis = (function() {
                     break;
             }
 
-			// setting if log magnitude is desired
-			if ($s("#logscale").checked) { // log magnitude
-				Math.squash = function(x) {return Math.log(x)};
-				var shift = 1; //1 with log; 0 with identity
-			} else { // magnitude as is
-				Math.squash = function(x) {return x};
-				var shift = 0; //1 with log; 0 with identity    
-			}
+            // setting if log magnitude is desired
+            if ($s("#logscale").checked) { // log magnitude
+                Math.squash = function(x) {return Math.log(x)};
+                var shift = 1; //1 with log; 0 with identity
+            } else { // magnitude as is
+                Math.squash = function(x) {return x};
+                var shift = 0; //1 with log; 0 with identity    
+            }
 
             console.log("   ...normalizing the amplitudes");
             var squashedImage = newImage.map( x => Math.squash( x.magnitude() + shift) );
@@ -421,7 +421,7 @@ var BagelImageAnalysis = (function() {
 
             // draw the pixels
             console.log("   ...dumping the image on the screen");
-            squashedImage = Bagel.elementWiseTimes( squashedImage, 255/maxMagnitude );		
+            squashedImage = Bagel.elementWiseTimes( squashedImage, 255/maxMagnitude );        
             fillCanvasFrom( ctxs[1], squashedImage );
 
             $s('#errfield').innerHTML = "Tranformed!";
@@ -435,46 +435,46 @@ var BagelImageAnalysis = (function() {
     // Make the transformation into newImage and show in canvas2
     //-----------------------------------------------------
     function contrastAction( method, range ) {
-		// Rescale the range of pixel gray colors around 0.5
-		// Two techniques are implemented: (a) a simple (r)escaling where
-		// pixels are rescaled to cover a range from 0.5-range/2 to 0.5+range/2.
-		// (b) the m(edian) rescaling whereby, as with (r), the pixels are
-		// rescaled to cover a range from 0.5-range/2 to 0.5+range/2 and then
-		// the pixels are shifted up or down so that the median equals 0.5.
+        // Rescale the range of pixel gray colors around 0.5
+        // Two techniques are implemented: (a) a simple (r)escaling where
+        // pixels are rescaled to cover a range from 0.5-range/2 to 0.5+range/2.
+        // (b) the m(edian) rescaling whereby, as with (r), the pixels are
+        // rescaled to cover a range from 0.5-range/2 to 0.5+range/2 and then
+        // the pixels are shifted up or down so that the median equals 0.5.
         console.log("===Step 3: Contrasting the image with args", method);
         try {
             // compute cstImage
-			tmpImage = newImage.map( x => x.magnitude() );
-			minImg = Math.min.apply(null,tmpImage);
-			maxImg = Math.max.apply(null,tmpImage);
-			console.log( "=> Min, max  = ", [minImg, maxImg] );
+            tmpImage = newImage.map( x => x.magnitude() );
+            minImg = Math.min.apply(null,tmpImage);
+            maxImg = Math.max.apply(null,tmpImage);
+            console.log( "=> Min, max  = ", [minImg, maxImg] );
 
             switch( method ) {
                 case "r": 
-					console.log("   ...contrasting for a mean of 0.5 with a range of ", range);
-					range = parseFloat(range, 10);
-					if ((isNaN(range))||(range >1)||(range <0)) {throw new Error("You must provide gray range (between 0 and 1)")}
-					cstImage = Bagel.elementWisePlus( tmpImage, -minImg);
-					cstImage = Bagel.elementWiseTimes( cstImage, range/(maxImg-minImg) );
-					cstImage = Bagel.elementWisePlus( cstImage, 0.5-range/2 );
+                    console.log("   ...contrasting for a mean of 0.5 with a range of ", range);
+                    range = parseFloat(range, 10);
+                    if ((isNaN(range))||(range >1)||(range <0)) {throw new Error("You must provide gray range (between 0 and 1)")}
+                    cstImage = Bagel.elementWisePlus( tmpImage, -minImg);
+                    cstImage = Bagel.elementWiseTimes( cstImage, range/(maxImg-minImg) );
+                    cstImage = Bagel.elementWisePlus( cstImage, 0.5-range/2 );
                     break;
                 case "m": 
-					console.log("   ...contrasting for a mean of 0.5 with a range of ", range);
-					range = parseFloat(range, 10);
-					if ((isNaN(range))||(range >1)||(range <0)) {throw new Error("You must provide gray range (between 0 and 1)")}
-					cstImage = Bagel.elementWisePlus( tmpImage, -minImg);
-					cstImage = Bagel.elementWiseTimes( cstImage, range/(maxImg-minImg) );
-					cstImage = Bagel.elementWisePlus( cstImage, 0.5-range/2 );
+                    console.log("   ...contrasting for a mean of 0.5 with a range of ", range);
+                    range = parseFloat(range, 10);
+                    if ((isNaN(range))||(range >1)||(range <0)) {throw new Error("You must provide gray range (between 0 and 1)")}
+                    cstImage = Bagel.elementWisePlus( tmpImage, -minImg);
+                    cstImage = Bagel.elementWiseTimes( cstImage, range/(maxImg-minImg) );
+                    cstImage = Bagel.elementWisePlus( cstImage, 0.5-range/2 );
 
-					mn = Math.min.apply(null,cstImage);
-					mx = Math.max.apply(null,cstImage);
-					md = Bagel.median( cstImage );
-					lg = 0.5-md;
-					console.log("Min, Max, Median, Lag:", mn, mx, md, lg);
-					cstImage = Bagel.elementWisePlus( cstImage, lg );
+                    mn = Math.min.apply(null,cstImage);
+                    mx = Math.max.apply(null,cstImage);
+                    md = Bagel.median( cstImage );
+                    lg = 0.5-md;
+                    console.log("Min, Max, Median, Lag:", mn, mx, md, lg);
+                    cstImage = Bagel.elementWisePlus( cstImage, lg );
                     break;
                 case "c": 
-					throw new Error("corner not implemented yet...");
+                    throw new Error("corner not implemented yet...");
                     break;
                 default: 
                     throw new Error("   ...You must provide argument r(escale), m(edian rescale) or c(orners rescale).")
@@ -486,7 +486,7 @@ var BagelImageAnalysis = (function() {
 
             // draw the pixels
             console.log("   ...dumping the image on the screen");
-            cstImage = Bagel.elementWiseTimes( cstImage, 255 );		
+            cstImage = Bagel.elementWiseTimes( cstImage, 255 );        
             fillCanvasFrom( ctxs[2], cstImage );
 
             $s('#errfield').innerHTML = "Contrasted!";
@@ -507,7 +507,7 @@ var BagelImageAnalysis = (function() {
         $s('#draw-lettre-btn').disabled = true;
         $s('#draw-plaid-btn').disabled  = true;
         $s('#transform-btn').disabled   = true;
-        $s('#method-btn').disabled   	= true;
+        $s('#method-btn').disabled       = true;
 
         setTimeout(callback, 50); // 50 ms for the UI to update
         enableButtons();
@@ -519,7 +519,7 @@ var BagelImageAnalysis = (function() {
         $s('#draw-lettre-btn').disabled = false;
         $s('#draw-plaid-btn').disabled  = false;
         $s('#transform-btn').disabled   = false;
-        $s('#method-btn').disabled   	= false;
+        $s('#method-btn').disabled       = false;
     }
 
 
@@ -537,8 +537,8 @@ var BagelImageAnalysis = (function() {
     // All done! The init is the only public function
     //-----------------------------------------------------
     return { 
-		init: initBagelImageAnalysis 
-	};
+        init: initBagelImageAnalysis 
+    };
 })();
 
 window.addEventListener( 'load', BagelImageAnalysis.init );
