@@ -385,28 +385,17 @@ var Bagel = (function() {
         var dims = [Math.sqrt(matrix.length), Math.sqrt(matrix.length)];
         var M = dims[0];
         var N = dims[1];
-        // swap upper left quadrant
+
         for (var n = 0; n < N/2; n++) {
             for (var m = 0; m < M/2; m++) {
-                out[n*N + m] = matrix[(N/2+n)*N + M/2+m]
-            }
-        }
-        // swap lower right quadrant
-        for (var n = N/2; n < N; n++) {
-            for (var m = M/2; m < M; m++) {
-                out[n*N + m] = matrix[(n-N/2)*N + m-M/2]
-            }
-        }
-        // swap upper right quadrant
-        for (var n = 0; n < N/2; n++) {
-            for (var m = M/2; m < M; m++) {
-                out[n*N + m] = matrix[(N/2+n)*N + m-M/2]
-            }
-        }
-        // swap lower left quadrant
-        for (var n = N/2; n < N; n++) {
-            for (var m = 0; m < M/2; m++) {
-                out[n*N + m] = matrix[(n-N/2)*N + m+M/2]
+                // swap upper left quadrant
+                out[(n+0)*N   + (m+0)  ] = matrix[(n+N/2)*N + (m+M/2)]
+                // swap lower right quadrant
+                out[(n+N/2)*N + (m+N/2)] = matrix[(n+0)*N   + (m+0)  ]
+                // swap upper right quadrand
+                out[(n+0)*N   + (m+N/2)] = matrix[(n+N/2)*N + (m+0)  ]
+                // swap lower left quadrant
+                out[(n+N/2)*N + (m+0)  ] = matrix[(n+0)*N   + (m+M/2)]
             }
         }
         return out
@@ -590,33 +579,33 @@ var Bagel = (function() {
     //***************************************************************************************
     return {
         version:            version,
-        Complex:               Complex,
+        Complex:            Complex,
 
-        round:                   round,
-        median:                median,
-        transpose:               transpose,
+        round:              round,
+        median:             median,
+        transpose:          transpose,
         shuffle:            shuffle,
 
         FFT1D:              FFT1D,
         invFFT1D:           invFFT1D,
-        FFT2D:               FFT2D,
-        invFFT2D:            invFFT2D,
-        shiftQuadrants:       shiftQuadrants,
+        FFT2D:              FFT2D,
+        invFFT2D:           invFFT2D,
+        shiftQuadrants:     shiftQuadrants,
 
-        donutFilter:         donutFilter,
-        gaussFilter:         gaussFilter,
-        bagelFilter:         bagelFilter,
+        donutFilter:        donutFilter,
+        gaussFilter:        gaussFilter,
+        bagelFilter:        bagelFilter,
         oneOverFnFilter:    oneOverFnFilter, 
-        bagelSampler:        bagelSampler,
+        bagelSampler:       bagelSampler,
 
-        gaussianNoisyImg:    gaussianNoisyImg,
-        emptyImg:               emptyImg,
-        letterImg:            letterImg,
-        plaidImg:            plaidImg,
+        gaussianNoisyImg:   gaussianNoisyImg,
+        emptyImg:           emptyImg,
+        letterImg:          letterImg,
+        plaidImg:           plaidImg,
 
         elementWisePlus:    elementWisePlus,
-        elementWiseTimes:    elementWiseTimes,
-        elementWiseEqual:    elementWiseEqual
+        elementWiseTimes:   elementWiseTimes,
+        elementWiseEqual:   elementWiseEqual
         
     };
 })();

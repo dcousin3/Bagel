@@ -22,7 +22,7 @@ Bagel is distributed under a CC 4.0 BY NC license
 One exception is the function `invFFT_1D_radix2` which is distributed under a MIT license.
 
  
-## Reference
+## References
 
 Cousineau, D., & Collin, C. (2023) Bagel: JavaScript library for image manipulation [software]
     version 1.3.1. URL: http://dcousin3.github.io/Bagel/
