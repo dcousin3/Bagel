@@ -278,10 +278,8 @@ var Bagel = (function() {
         for (var i = 0; i < frequencies.length; i++) {
             if (frequencies[i] != 0) {
                 idx1 = (cntr + Math.round(Math.sin(angles[i]) * frequencies[i]/2)) * dims[0] + ( cntr + Math.round(Math.cos(angles[i]) * frequencies[i]/2) ) ;
-    console.log(idx1);
                 gabor[ idx1 - 1 ] = new Bagel.Complex(1, 0);
                 idx2 = (cntr - Math.round(Math.sin(angles[i]) * frequencies[i]/2)) * dims[0] + ( cntr - Math.round(Math.cos(angles[i]) * frequencies[i]/2) ) ;
-    console.log(idx2);
                 gabor[ idx2 -1 ] = new Bagel.Complex(1, 0);
             }
         };

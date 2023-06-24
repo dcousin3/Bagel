@@ -196,7 +196,7 @@ var BagelImageAnalysis = (function() {
 
     function generateGabor(frequencyvalues){
         console.log("===Step 1d: Generating a Gabor from ", frequencyvalues, "===");
-        
+
         // check the parameters
         try {
             var frqs = frequencyvalues.split(/[,;]/);
@@ -212,25 +212,19 @@ var BagelImageAnalysis = (function() {
         // do the Gabor 
         dims = [256, 256] ;
         var angles = [Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4];
-//var gabor = [];
-        
-console.log("here G1?")
+
         var gabor = Bagel.gaborImg( dims, angles, frqs, radius )
-console.log("here2?")
         // make each canvas the image's exact size
         adjustCanvases( dims );
 
         // draw the image to the canvas
         fillCanvasFrom( ctxs[0], gabor.map( x => x.magnitude() ) );
-console.log("here G2?")
 
         // copy the pixels onto rawImage
         rawImage = gabor.slice();
-console.log(rawImage)
-console.log("here G3?")
 
         // some diagnostics...
-    someDiags(rawImage.map( x => x.magnitude() ) );
+        someDiags(rawImage.map( x => x.magnitude() ) );
         $s('#errfield').innerHTML = "Gabor generated";
     }
 

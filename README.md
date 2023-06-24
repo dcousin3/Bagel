@@ -6,7 +6,7 @@ This library has two purposes, (a) to provide functions to perform image manipul
 
 Bagel (Bubbles Along Gaussians Evolving radialLy) is a set of tools to create a filter 
 which is composed of gaussian rings at various distances from the center. The locations 
-are randomly chosen among the lg(width) positions with steps of 1/k with k the smooth 
+are randomly chosen among the log_2(width) positions with steps of 1/k with k the smooth 
 parameter.
 
 Preliminary work were presented in Willenbock et al. (2010). This set of tools expands on
@@ -18,7 +18,9 @@ test various functions using a rudimentary interface.
 
    
 ## License
-Bagel is distributed under a CC 4.0 BY NC license
+Bagel is distributed under a CC 4.0 BY NC license with the dditional restriction that 
+non-humans (bots and automated web scraping algorithms) are not allowed to use, adapt, 
+or modify code here unless explicitely approved by the right holders.
 One exception is the function `invFFT_1D_radix2` which is distributed under a MIT license.
 
  
