@@ -10,10 +10,14 @@
 //                                                                              //          //
 //==============================================================================//==========//
 // (C) Denis Cousineau & Charles Collin, 2023                                               //
-// Distributed under CC 4.0 BY NC which means                                               //
+// Distributed under CC 4.0 BY NC which means:                                              //
 //                BY: cite this if you use Bagel according to academic standards            //
 //                NC: absolutely no commercial use without permission.                      //
 //             under MIT for invFFT_1D_radix2                                               //
+// Additionally, HU (humans only) which means:
+//                non-humans (bots and automated web scraping algorithms) are not allowed    //
+//                to use, adapt, or modify code here unless explicitely approved by the     //
+//                right holders.
 //==========================================================================================//
 
 //==========================================================================================
@@ -21,14 +25,13 @@
 //     https://github.com/turbomaze/JS-Fourier-Image-Analysis
 // Massive changes by Denis Cousineau.
 //     In particular, the shift was not working; and the FFT/invFFT was for 1D vectors only.
-//     With help from https://stackoverflow.com/a/76277362/5181513
 //==========================================================================================
 
 //==========================================================================================
 // Version history
 //      1.2.0 (2023.05.18): Original version
 //                  Detected that JS-Fourier-Image-Analysis was incorrect in many ways.
-//                  For simplicity, the NxN mage matrix is stored in a vector of length N*N.
+//                  For simplicity, the NxN image matrix is stored in a vector of length N*N.
 //      1.3.0 (2023.05.22): Added contrast manipulation in the GUI
 //                  Use (r)escaling and (m)edian equalization;
 //      1.3.1 (2023.06.16): Triple-checked FFT with Mathematica 
@@ -48,6 +51,7 @@
 //          emptyImg            an empty image
 //          gaussianNoisyImg,   a random image
 //          plaidImg            a plaid with frequencies along angles
+//          gaborImg            a multiple-component Gabor patch
 //          letterImg           an image of a letter
 //      for image filtering: (all filters are arrays of Complex with real between 0 and 1)
 //          donutFilter:        a standard band filter (low pass and high pass), 
@@ -75,6 +79,29 @@ var Bagel = (function() {
     // image transform functions : all are programmed using the inverse FFT
     //         the results all have been tested with Mathematica
     //***************************************************************************************
+    function rescale( input ) {
+        // This function changes the pixel values so that they range from 0 to 255.
+        // The input is assumed a square image stored in an array.
+        min = Math.min.apply(null, input);
+        max = Math.max.apply(null, input);
+
+        scaledinput = Bagel.elementWisePlus( scaledinput, -min );
+        scaledinput = Bagel.elementWiseTimes( scaledinput, 255/ (max-min) );
+
+        return scaledinput;
+    }
+    function removeDC( input ) {
+        // Ths function filters out the central, '0-frequency', aka DC, component.
+        // This is only to allow better visualization of the FFT: the DC is typically
+        // so large that in comparison, all the other components of the FFT are weak
+        // and would show up as almost-nearly black dots. 
+        // The radius is heuristically set to 1/64th the size of the whole image.
+        // the input is assumed a square image stored in an array.
+        dim = Math.sqrt( input.length );
+        modifiedinput = Bagel.elementWiseTimes( input, Bagel.gaussFilter( [dim,dim], -dim/64 ) );
+        return modifiedinput;
+    }
+
     function FFT1D( input ) {
         // Proxy for a 1D (vector) fast-Fourier transform
         out = [];
@@ -129,8 +156,9 @@ var Bagel = (function() {
 
 
     function invFFT_2D_radix2(out, start, input, dims, offset, s) {
-        //It uses the property that a 2D FFT is the FFT of the column + the FFT of the rows.
+        // It uses the property that a 2D FFT is the FFT of the column + the FFT of the rows.
         // Run invFFT_1D on rows, then on columns (by transposing the matrix)
+        // With help from https://stackoverflow.com/a/76277362/5181513
         for (let i = 0; i < 2; i++) {
             for (let j = 0; j < dims[1]; j++) {
                 invFFT_1D_radix2(out, j * dims[0], input, dims[0], j * dims[0], s);
@@ -224,7 +252,7 @@ var Bagel = (function() {
             }
         };
         if (nplaid > 0) { plaid = Bagel.elementWiseTimes( plaid, 1/nplaid); };
-    
+
         plaid  = Bagel.elementWisePlus( plaid, -255/2 );
         filter = Bagel.gaussFilter( dims, radius );
         plaid  = Bagel.elementWiseTimes( plaid, filter );
@@ -232,6 +260,50 @@ var Bagel = (function() {
 
         return plaid;    
     }
+
+
+
+
+
+    function gaborImg( dims, angles, frequencies, radius ) {
+        // Generate a complex array of gray-level pixels coding a gabor from superposition
+        // of sin waves at angles with frequencies which is then given a gaussian envelop 
+        // of radius.
+        if (angles.length != frequencies.length) {throw new Error("Bagel.plaidImg:: There must be as many angles as frequencies.");};
+        if (radius <= 0) {throw new Error("Bagel.gaborImg:: Radius must be larger than zero");};
+
+        var gabor = Bagel.emptyImg( dims, 0 );
+        var cntr = dims[0]/2+1; //center  +++ VALIDATED WITH math
+
+        for (var i = 0; i < frequencies.length; i++) {
+            if (frequencies[i] != 0) {
+                idx1 = (cntr + Math.round(Math.sin(angles[i]) * frequencies[i]/2)) * dims[0] + ( cntr + Math.round(Math.cos(angles[i]) * frequencies[i]/2) ) ;
+    console.log(idx1);
+                gabor[ idx1 - 1 ] = new Bagel.Complex(1, 0);
+                idx2 = (cntr - Math.round(Math.sin(angles[i]) * frequencies[i]/2)) * dims[0] + ( cntr - Math.round(Math.cos(angles[i]) * frequencies[i]/2) ) ;
+    console.log(idx2);
+                gabor[ idx2 -1 ] = new Bagel.Complex(1, 0);
+            }
+        };
+        // inverting the points
+        gabor = Bagel.invFFT2D( Bagel.shiftQuadrants( gabor ) );
+        temp = gabor.map( x => x.magnitude() ); //remove phase information
+        tempMax = Math.max.apply(null,temp);
+        gabor = gabor.map( x => new Bagel.Complex(x.real* 255/tempMax, x.imag * 255/tempMax) );
+
+        // putting the gaussian envelop
+        gabor  = Bagel.elementWisePlus( gabor, -255/2 );
+        filter = Bagel.gaussFilter( dims, radius );
+        gabor  = Bagel.elementWiseTimes( gabor, filter );
+        gabor  = Bagel.elementWisePlus( gabor, +255/2 );
+
+        return gabor;    
+    }
+
+
+
+
+
 
     function letterImg( dims, letter ) {
         // Generate a complex array of b/w pixels coding a given letter.
@@ -258,7 +330,7 @@ var Bagel = (function() {
 
 
     //***************************************************************************************
-    // image filter functions : donut, gauss, bagel
+    // image filter functions : donut, gauss, oneOverFn, bagel
     //***************************************************************************************
     function donutFilter( dims, lowPass, highPass ) {
         // AKA band-pass filter: a hard-threshold filter inside lowPass-highPass
@@ -342,14 +414,16 @@ var Bagel = (function() {
         // Generate a bagel filter, that is, radial gaussians located on a certain frequency
         // (a certain distance from the center of the filter). The lists mus and sigmas must
         // have the same length. It is suggested to have the sigmas = mus / (2*k).
+        // The bagels are centered on (129,129) if dims = [256,256] 
+        // but 129 is the 128th column (as we start from zero) 
         if (mus.length != sigmas.length) {throw new Error("Bagel.bagelFilter:: There must be as many mus as sigmas.");};
-                
-        var out = new Array(dims[0]*dims[1]); 
+
+        var w    = dims[0]/2;
+        var out  = new Array(dims[0]*dims[1]);   
         for (let i = 0; i < dims[0]*dims[1]; i++) out[i] = 0;
 
-        var w = dims[0]/2;
         // compute the sum of the gaussian distributions along a line of length 2w
-        var curve = [];
+        var curve = []; //in the center, curve heigth is null
         for (let x = 0; x < 2*w; x++) {
             var h = 0; 
             for (let j = 0; j < mus.length; j++ ) {
@@ -357,18 +431,17 @@ var Bagel = (function() {
             }
             curve.push(h)
         }
+        curve = curve.map( x => round(x, 10))
 
         // rotate this mixture around the center of one quadrant; 
         // it is symmetrical about the other three quadrants
-        for (let k = 0; k < w; k++) {
-            for (let l = 0; l < w; l++) {
-                var d = round(Math.sqrt( (k-w)**2 + (l-w)**2 ),0);
-                out[k*dims[1] + l] = curve[d];
-                out[(2*w-k-1)*dims[1] + l] = curve[d];
-                out[k*dims[1] + 2*w-l-1] = curve[d];
-                out[(2*w-k-1)*dims[1] + 2*w-l-1] = curve[d];
+        for (let k = 0; k < 2*w; k++) {
+            for (let l = 0; l < 2*w; l++) {
+                var d = Math.round( Math.sqrt( (k-w)**2 + (l-w)**2 ) );
+                out[ k*dims[1] + l ] = curve[Math.max(d,1)];
             }
         };
+
         out = out.map( x => new Complex( x, 0 ) );
         return out;
     };
@@ -418,6 +491,7 @@ var Bagel = (function() {
         }
     };
     function median(numbers) {
+        // see https://stackoverflow.com/a/53660837/5181513
         if(numbers.length === 0) throw new Error("Bagel.median:: No inputs to compute median");
         
         const sorted = Array.from(numbers).sort( (a, b) => a - b );
@@ -578,34 +652,37 @@ var Bagel = (function() {
     // returned value 
     //***************************************************************************************
     return {
-        version:            version,
-        Complex:            Complex,
+        version:            version,        // returns the version of Bagel
+        Complex:            Complex,        // class to store complex number
 
-        round:              round,
-        median:             median,
-        transpose:          transpose,
-        shuffle:            shuffle,
+        round:              round,          // round number to a certain number of decimals
+        median:             median,         // compute the median of an array
+        transpose:          transpose,      // transpose a square maxtrix stored in an array
+        shuffle:            shuffle,        // randomize the items' order in an array
 
-        FFT1D:              FFT1D,
-        invFFT1D:           invFFT1D,
-        FFT2D:              FFT2D,
-        invFFT2D:           invFFT2D,
-        shiftQuadrants:     shiftQuadrants,
+        rescale:            rescale,        // rescale between 0 and 255 the items from an array
+        removeDC:           removeDC,       // fitler out the center of a FFT image
+        FFT1D:              FFT1D,          // perform fast-Fourier transfomr on a vector
+        invFFT1D:           invFFT1D,       // perform an inverse fast-Fourier transform on a vector
+        FFT2D:              FFT2D,          // perform fast-Fourier transform on a matrix
+        invFFT2D:           invFFT2D,       // perform an inverse fast-Fourier transform on a matrix
+        shiftQuadrants:     shiftQuadrants, // shift the quadrants from a matrix
 
-        donutFilter:        donutFilter,
-        gaussFilter:        gaussFilter,
-        bagelFilter:        bagelFilter,
-        oneOverFnFilter:    oneOverFnFilter, 
-        bagelSampler:       bagelSampler,
+        donutFilter:        donutFilter,    // filter composed of a band of ON (1) on a matrix of OFF (0)
+        gaussFilter:        gaussFilter,    // filter composed of a mode culminating at 1 in the center of the image
+        oneOverFnFilter:    oneOverFnFilter, // fiter compose of an exponential with exponent -n over the center of the image
+        bagelFilter:        bagelFilter,    // filter composed of a ring whose transversal shape is a gaussian
+        bagelSampler:       bagelSampler,   // adjuvent to bagelFilter which picks bagels at random
 
-        gaussianNoisyImg:   gaussianNoisyImg,
-        emptyImg:           emptyImg,
-        letterImg:          letterImg,
-        plaidImg:           plaidImg,
+        gaussianNoisyImg:   gaussianNoisyImg, // Normally-distributed random gray-level pixels
+        emptyImg:           emptyImg,       // empty image...
+        letterImg:          letterImg,      // pixels representing a letter in black on a white background
+        plaidImg:           plaidImg,       // an image obtained from a superposition of one-frequency images
+        gaborImg:           gaborImg,       // an image obtained from the inverse FFT of multiple frequency components
 
-        elementWisePlus:    elementWisePlus,
-        elementWiseTimes:   elementWiseTimes,
-        elementWiseEqual:   elementWiseEqual
+        elementWisePlus:    elementWisePlus,    // add items from two matrix or one matrix and one scalar
+        elementWiseTimes:   elementWiseTimes,   // mutiply items ...
+        elementWiseEqual:   elementWiseEqual    // check equality of items ...
         
     };
 })();

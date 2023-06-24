@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
         <meta charset="UTF-8">
-        <title>Bagel Transform</title>
+        <title>Bagel library demo page</title>
         <script src="BagelFiles/Bagel.js"></script>
         <script src="BagelFiles/main.js"></script>
         <style>
@@ -14,8 +14,11 @@
     </head>
 
     <body>
+        <hr>
         <h1>Bagel: A GUI to test the functions</h1>
-
+        <p>This web page offers a few options to explore the <a target="_blank" href="https://github.com/dcousin3/Bagel">Bagel library</a> for image manipulation. </p>
+        <hr>
+        
         <div >
             Status: <div id="errfield" style="display: inline; color:red;"></div>
         </div>
@@ -35,12 +38,16 @@
                 <br>
                 Draw a letter: <input type="text" id="lettre"   value="" size=2><input type="button" id="draw-lettre-btn" value="Draw"><br>
                 Draw a plaid:  <input  type="text" id="plaidfrq" value="" size=10 placeholder="frequency for 4 orientations"><input type="button" id="draw-plaid-btn" value="Draw"><br>
+                Draw a Gabor:  <input  type="text" id="gaborfrq" value="" size=10 placeholder="frequency for 4 orientations"><input type="button" id="draw-gabor-btn" value="Draw"><br>
             </div>
 
             <div style="display: inline-block; margin-right: 22px; vertical-align: top">
-                2. Transformed image (Log scale: <input type="checkbox" id="logscale" name="logscale" value="true">)
+                2. Transformed image 
                 <br>
                 <canvas id="canvas1" width="256" height="256"></canvas>
+                <br>
+                For FFTs: Log scale <input type="checkbox" id="logscale" name="logscale" value="true">; 
+                DC filtered <input type="checkbox" id="DCfilter" name="DCfitler" value="false">
                 <br>
                 Operation to do: <input type="text" id="arg" size=2 placeholder="process to perform" value=0>
                 <input type="text" id ="arglist" size=12 placeholder="additional arguments if needed">
@@ -63,8 +70,9 @@
                 <input type="button" id="method-btn" value="Adjust the contrast">
             </div>
         </div>
- 
-        <h4>Arguments for "Drawing a plaid":</h4>
+
+        <hr>
+        <h4>Arguments for "Drawing a plaid" and "Drawing a Gabor":</h4>
             <p>Four numbers for the frequencies at 0, 45, 90 and 135 degrees. Optional is a radius for a gaussian envelop.</p>
         <h4>Arguments for "Operation to do":</h4>
         <ul>
@@ -95,5 +103,12 @@
             <li>m, for median adjustment: the image is first rescaled then the intensities are move up or down until the median intensity is 0.5.</li>
         </ul>
 
+        <h4>Log scale and DC filtered</h4>
+            <p>These two options are meaningfull only for Fourier images (the operations 1, 2-3, 5-6, and 8-9)...</p>
+            
+        <hr>
+        <p>(c) 2023 Denis Cousineau & Charles Collin. If you use Bagel, please cite this work.</p>
+        <hr>
+        
     </body>
 </html>

@@ -30,17 +30,17 @@ var BagelImageAnalysis = (function() {
         $s('#draw-cs-btn').addEventListener('click', function() {
             disableButtons(loadImage('https://raw.githubusercontent.com/turbomaze/JS-Fourier-Image-Analysis/master/cs.png'));
         });
-
         $s('#draw-grace-btn').addEventListener('click', function() {
             disableButtons(loadImage('https://raw.githubusercontent.com/turbomaze/JS-Fourier-Image-Analysis/master/grace.png'));
         });
-
         $s('#draw-lettre-btn').addEventListener('click', function(){
             disableButtons(generateLetter(lettre.value));
         });
-
         $s('#draw-plaid-btn').addEventListener('click', function(){
             disableButtons(generatePlaid(plaidfrq.value));
+        });
+        $s('#draw-gabor-btn').addEventListener('click', function(){
+            disableButtons(generateGabor(gaborfrq.value));
         });
 
         $s('#transform-btn').addEventListener('click', function() {
@@ -73,8 +73,13 @@ var BagelImageAnalysis = (function() {
         }
     }
     function someDiags( image ) {
-        console.log( "      => Dimension = ", dims);
-        console.log( "      => Min, max  = ", [Math.min.apply(null, image), Math.max.apply(null, image)] );
+        if (image.constructor.name === "Array") {
+            var dims = Math.sqrt( image.length );
+            var temp = image;
+            if (image[0].constructor.name === "Complex") { temp = temp.map( x=>x.magnitude() ) };
+            console.log( "      => Dimension = ", dims);
+            console.log( "      => Min, max  = ", [Math.min.apply(null, image), Math.max.apply(null, image)] );
+        }
     }
     function fillCanvasFrom( ctx, matrix ) {
         ctx.clearRect(0, 0, 256, 256); // erase all
@@ -124,7 +129,7 @@ var BagelImageAnalysis = (function() {
                 // some diagnostics...
                 someDiags(rawImage);
                 
-                $s('#errfield').innerHTML = "Loaded!";
+                $s('#errfield').innerHTML = "Image loaded!";
             } catch (e) {
                 $s('#errfield').innerHTML = e.message;
             }
@@ -152,10 +157,11 @@ var BagelImageAnalysis = (function() {
 
         // some diagnostics...
         someDiags(rawImage);
+        $s('#errfield').innerHTML = "Letter generated";
     }
 
     function generatePlaid(frequencyvalues){
-        console.log("===Step 1b: Generating a plaid from ", frequencyvalues, "===");
+        console.log("===Step 1c: Generating a plaid from ", frequencyvalues, "===");
         
         // check the parameters
         try {
@@ -173,20 +179,61 @@ var BagelImageAnalysis = (function() {
         dims = [256, 256] ;
         var angles = [Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4];
         plaid = Bagel.plaidImg( dims, angles, frqs, radius )
-        plaid = plaid.map( x => x.magnitude() );
 
         // make each canvas the image's exact size
         adjustCanvases( dims );
 
         // draw the image to the canvas
-        fillCanvasFrom( ctxs[0], plaid );
+        fillCanvasFrom( ctxs[0], plaid.map( x => x.magnitude() ) );
 
         // copy the pixels onto rawImage
         rawImage = plaid.slice();
 
         // some diagnostics...
         someDiags(rawImage);
+        $s('#errfield').innerHTML = "Plaid generated";
     }
+
+    function generateGabor(frequencyvalues){
+        console.log("===Step 1d: Generating a Gabor from ", frequencyvalues, "===");
+        
+        // check the parameters
+        try {
+            var frqs = frequencyvalues.split(/[,;]/);
+            if ((frqs.length<4)||(frqs.length>5)) {throw new Error("You must provide four even frequencies for 0, 45, 90 and 135 degrees, e.g., `40,0,10,0` (optional: the radius of the envelop, e.g., 40,0,10,0;70)")}
+            frqs  = frqs.map( x => Math.round(parseInt(x, 10)/1)*1 );
+            if (frqs.length == 5)  { var radius = frqs[4]; frqs.pop(); }
+            else { var radius = (256 * 40) }; // i.e., no visible envelop
+        } catch (e) {
+            $s('#errfield').innerHTML = e.message;
+            return;
+        }
+
+        // do the Gabor 
+        dims = [256, 256] ;
+        var angles = [Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4];
+//var gabor = [];
+        
+console.log("here G1?")
+        var gabor = Bagel.gaborImg( dims, angles, frqs, radius )
+console.log("here2?")
+        // make each canvas the image's exact size
+        adjustCanvases( dims );
+
+        // draw the image to the canvas
+        fillCanvasFrom( ctxs[0], gabor.map( x => x.magnitude() ) );
+console.log("here G2?")
+
+        // copy the pixels onto rawImage
+        rawImage = gabor.slice();
+console.log(rawImage)
+console.log("here G3?")
+
+        // some diagnostics...
+    someDiags(rawImage.map( x => x.magnitude() ) );
+        $s('#errfield').innerHTML = "Gabor generated";
+    }
+
 
 
     //-----------------------------------------------------
@@ -402,6 +449,11 @@ var BagelImageAnalysis = (function() {
                     throw new Error("   ...You must provide argument between 0 and 10 or 99.")
                     break;
             }
+
+            // removing the center; meaningfull only for fourier images...
+            if ( $s("#DCfilter").checked ) {
+                newImage = Bagel.removeDC( newImage );
+            };
 
             // setting if log magnitude is desired
             if ($s("#logscale").checked) { // log magnitude
