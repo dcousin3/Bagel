@@ -245,6 +245,7 @@ var BagelImageAnalysis = (function() {
                 case "0": 
                     console.log("   ...returning the raw image");
                     newImage = rawImage.slice();
+
                     // adding noise?
                     noiseprop = parseFloat(noiseprop, 10);
                     if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
@@ -306,12 +307,30 @@ var BagelImageAnalysis = (function() {
                     newImage = Bagel.elementWiseTimes(filter, newImage);
                     newImage = Bagel.shiftQuadrants( newImage );
                     newImage = Bagel.invFFT2D( newImage );
+
                     // adding noise?
                     noiseprop = parseFloat(noiseprop, 10);
                     if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
+                    if ((noiseprop > 1)||(noiseprop <= 0))  {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
                     var noisestd = Math.max(...newImage.map( x => x.magnitude() ) ) /4;
-                    if ((noiseprop > 1)||(noiseprop <= 0)) {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
-                    tempImage = Bagel.gaussianNoisyImg( dims, noisestd ) ;
+                    tempImage = Bagel.gaussianNoisyImg( dims, 1 ) ;
+                    
+                    console.log(nselist == "");
+                    if ((nselist != "")) {
+                        var nze = nselist.split(/[,;:]/);
+                        if (nze.length<2) {throw new Error("You must provide filter type and arg(s), e.g., `f:2`")}
+                        nzetype = nze.shift();
+                        nzearg  = nze.map( x => parseFloat(x, 10) );
+                        if (nzetype == 'f') {
+                            tempFilter = Bagel.oneOverFnFilter(dims, nzearg[0] );
+                            tempImage = Bagel.invFFT2D( Bagel.elementWiseTimes( Bagel.FFT2D( tempImage ), tempFilter ) );
+                            tt = tempImage.map ( x=> x.magnitude() );
+                            tempImage = Bagel.elementWisePlus( tempImage, -Math.min.apply(null,tt) );
+                            tempImage = Bagel.elementWiseTimes( tempImage, 5/(Math.max.apply(null,tt)-Math.min.apply(null,tt))  );
+                        };
+                    }
+                    tempImage = Bagel.elementWiseTimes( tempImage, noisestd );
+
                     tempImage = Bagel.elementWiseTimes( tempImage, noiseprop );
                     newImage  = Bagel.elementWiseTimes( newImage, 1-noiseprop );
                     newImage  = Bagel.elementWisePlus ( newImage, tempImage );
@@ -423,15 +442,35 @@ var BagelImageAnalysis = (function() {
                     
                     newImage = Bagel.shiftQuadrants( newImage );
                     newImage = Bagel.invFFT2D( newImage );
+
+
                     // adding noise?
                     noiseprop = parseFloat(noiseprop, 10);
                     if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
+                    if ((noiseprop > 1)||(noiseprop <= 0))  {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
                     var noisestd = Math.max(...newImage.map( x => x.magnitude() ) ) /4;
-                    if ((noiseprop > 1)||(noiseprop <= 0)) {throw new Error("You must provide proportion of noise, e.g., 0.5.")}
-                    tempImage = Bagel.gaussianNoisyImg( dims, noisestd ) ;
+                    tempImage = Bagel.gaussianNoisyImg( dims, 1 ) ;
+                    
+                    console.log(nselist == "");
+                    if ((nselist != "")) {
+                        var nze = nselist.split(/[,;:]/);
+                        if (nze.length<2) {throw new Error("You must provide filter type and arg(s), e.g., `f:2`")}
+                        nzetype = nze.shift();
+                        nzearg  = nze.map( x => parseFloat(x, 10) );
+                        if (nzetype == 'f') {
+                            tempFilter = Bagel.oneOverFnFilter(dims, nzearg[0] );
+                            tempImage = Bagel.invFFT2D( Bagel.elementWiseTimes( Bagel.FFT2D( tempImage ), tempFilter ) );
+                            tt = tempImage.map ( x=> x.magnitude() );
+                            tempImage = Bagel.elementWisePlus( tempImage, -Math.min.apply(null,tt) );
+                            tempImage = Bagel.elementWiseTimes( tempImage, 5/(Math.max.apply(null,tt)-Math.min.apply(null,tt))  );
+                        };
+                    }
+                    tempImage = Bagel.elementWiseTimes( tempImage, noisestd );
+
                     tempImage = Bagel.elementWiseTimes( tempImage, noiseprop );
                     newImage  = Bagel.elementWiseTimes( newImage, 1-noiseprop );
                     newImage  = Bagel.elementWisePlus ( newImage, tempImage );
+
                     break;
 
                 case "99": 
