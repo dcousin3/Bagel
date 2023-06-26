@@ -234,7 +234,7 @@ var Bagel = (function() {
 
         var plaid = Bagel.emptyImg( dims, 0 );
         var nplaid = 0;
-        var cntr = dims[0]/2+1; //center
+        var cntr = dims[0]/2+1; //center with +1
 
         for (var i = 0; i < frequencies.length; i++) {
             if (frequencies[i] != 0) {
