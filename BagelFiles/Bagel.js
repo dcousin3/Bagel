@@ -234,15 +234,18 @@ var Bagel = (function() {
 
         var plaid = Bagel.emptyImg( dims, 0 );
         var nplaid = 0;
-        var cntr = dims[0]/2; //center
+        var cntr = dims[0]/2+1; //center
 
         for (var i = 0; i < frequencies.length; i++) {
             if (frequencies[i] != 0) {
                 var plaidLayer = Bagel.emptyImg( dims, 0 );
-                idx1 = (cntr + Math.round(Math.sin(angles[i]) * frequencies[i]/2)) * dims[0] + ( cntr + Math.round(Math.cos(angles[i]) * frequencies[i]/2) ) ;
+                //console.log(cntr + Math.ceil(Math.sin(angles[i]) * frequencies[i]/2-0.0001)); //caliss JS pas capable d'arrondir comme du monde...
+                idx1 = (cntr + Math.ceil(Math.sin(angles[i]) * frequencies[i]/2-0.0001)) * dims[0] + ( cntr + Math.ceil(Math.cos(angles[i]) * frequencies[i]/2-0.0001) ) ;
                 plaidLayer[ idx1 - 1 ] = new Bagel.Complex(1, 0);
-                idx2 = (cntr - Math.round(Math.sin(angles[i]) * frequencies[i]/2)) * dims[0] + ( cntr - Math.round(Math.cos(angles[i]) * frequencies[i]/2) ) ;
+                
+                idx2 = (cntr - Math.floor(Math.sin(angles[i]) * frequencies[i]/2+0.0001)) * dims[0] + ( cntr - Math.floor(Math.cos(angles[i]) * frequencies[i]/2+0.0001) ) ;
                 plaidLayer[ idx2 -1 ] = new Bagel.Complex(1, 0);
+                //console.log(idx1,idx2);
                 plaidLayer = Bagel.invFFT2D( plaidLayer );
                 plaidLayer = plaidLayer.map( x => x.magnitude() ); //remove phase information
                 plaidTempMax = Math.max.apply(null,plaidLayer);
