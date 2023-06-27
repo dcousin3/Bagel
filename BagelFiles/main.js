@@ -366,7 +366,6 @@ var BagelImageAnalysis = (function() {
                     newImage = Bagel.shiftQuadrants( newImage );
                     newImage = Bagel.invFFT2D( newImage );
 
-
                     // adding noise?
                     noiseprop = parseFloat(noiseprop, 10);
                     if (isNaN(noiseprop)||(noiseprop == 0)) {break;}
