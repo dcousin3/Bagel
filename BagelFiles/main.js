@@ -1,6 +1,6 @@
 //************************************************************
 //
-// Implementing functions that returns bagels
+// Implementing functions that return bagels
 // (2023) Cousineau & Collins
 // Work under way. Comments welcome.    
 //
@@ -72,15 +72,6 @@ var BagelImageAnalysis = (function() {
             canvases[ai].height = dims[1];
         }
     }
-    function someDiags( image ) {
-        if (image.constructor.name === "Array") {
-            var dims = Math.sqrt( image.length );
-            var temp = image;
-            if (image[0].constructor.name === "Complex") { temp = temp.map( x=>x.magnitude() ) };
-            console.log( "      => Dimension = ", dims);
-            console.log( "      => Min, max  = ", [Math.min.apply(null, image), Math.max.apply(null, image)] );
-        }
-    }
     function fillCanvasFrom( ctx, matrix ) {
         ctx.clearRect(0, 0, 256, 256); // erase all
         var ImageData = ctx.getImageData(0, 0, dims[0], dims[1] );
@@ -127,7 +118,7 @@ var BagelImageAnalysis = (function() {
                 }
 
                 // some diagnostics...
-                someDiags(rawImage);
+                Bagel.imageDiags(rawImage, "rawImage");
                 
                 $s('#errfield').innerHTML = "Image loaded!";
             } catch (e) {
@@ -156,7 +147,7 @@ var BagelImageAnalysis = (function() {
         rawImage = ltter.slice();
 
         // some diagnostics...
-        someDiags(rawImage);
+        Bagel.imageDiags(rawImage, "rawImage");
         $s('#errfield').innerHTML = "Letter generated";
     }
 
@@ -190,7 +181,7 @@ var BagelImageAnalysis = (function() {
         rawImage = plaid.slice();
 
         // some diagnostics...
-        someDiags(rawImage);
+        Bagel.imageDiags(rawImage, "rawImage");
         $s('#errfield').innerHTML = "Plaid generated";
     }
 
@@ -224,7 +215,7 @@ var BagelImageAnalysis = (function() {
         rawImage = gabor.slice();
 
         // some diagnostics...
-        someDiags(rawImage.map( x => x.magnitude() ) );
+        Bagel.imageDiags(rawImage.map( x => x.magnitude() ), "rawImage" );
         $s('#errfield').innerHTML = "Gabor generated";
     }
 
@@ -521,7 +512,7 @@ var BagelImageAnalysis = (function() {
             // get the largest magnitude
             var maxMagnitude = Math.max(...squashedImage );
             // some diagnostics...
-            someDiags(squashedImage);
+            Bagel.imageDiags(squashedImage, "squashedImage");
 
             // draw the pixels
             console.log("   ...dumping the image on the screen");
@@ -586,7 +577,7 @@ var BagelImageAnalysis = (function() {
             }
 
             // some diagnostics...
-            someDiags( cstImage );
+            Bagel.imageDiags( cstImage, "ContrastedImage" );
 
             // draw the pixels
             console.log("   ...dumping the image on the screen");

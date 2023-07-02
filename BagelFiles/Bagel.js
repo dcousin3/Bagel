@@ -14,10 +14,10 @@
 //                BY: cite this if you use Bagel according to academic standards            //
 //                NC: absolutely no commercial use without permission.                      //
 //             under MIT for invFFT_1D_radix2                                               //
-// Additionally, HU (humans only) which means:
-//                non-humans (bots and automated web scraping algorithms) are not allowed    //
+// Additionally, HU (humans only) which means:                                              //
+//                non-humans (bots and automated web scraping algorithms) are not allowed   //
 //                to use, adapt, or modify code here unless explicitely approved by the     //
-//                right holders.
+//                right holders.                                                            //
 //==========================================================================================//
 
 //==========================================================================================
@@ -39,6 +39,7 @@
 //                  Also, the matrices are coded 0..255 which has implications
 //                  (relative to a 0..1 coding) when non-linear transforms are used.
 //      1.3.2 (2023.06.17): Canvas are rounding pixels so we bypass them for storing images
+//      1.3.3 (2023.07.02): Added truncate, rescale and removeDC
 //==========================================================================================
 
 //==========================================================================================
@@ -72,21 +73,28 @@
 
 var Bagel = (function() {
 
-    function version() {return 1.3};
+    function version() {return "Bagel version 1.3.3"};
 
 
     //***************************************************************************************
     // image transform functions : all are programmed using the inverse FFT
     //         the results all have been tested with Mathematica
     //***************************************************************************************
-    function rescale( input ) {
-        // This function changes the pixel values so that they range from 0 to 255.
+    function truncate(input, lower, upper) {
+        if (lower === undefined) {lower = 0;}
+        if (upper === undefined) {upper = 255;}
+        var out = input.map( x => ((x<lower)? lower :((x>upper)? upper :x)) );
+        return out
+    }
+    function rescale( input, upper ) {
+        // This function changes the pixel values so that they range from 0 to upper (default 255).
         // The input is assumed a square image stored in an array.
         min = Math.min.apply(null, input);
         max = Math.max.apply(null, input);
-
-        scaledinput = Bagel.elementWisePlus( scaledinput, -min );
-        scaledinput = Bagel.elementWiseTimes( scaledinput, 255/ (max-min) );
+        if (min==max) {return input;}; //image is a constant so we do not touch
+        if (upper === undefined) {upper = 255;}
+        scaledinput = Bagel.elementWisePlus( input, -min );
+        scaledinput = Bagel.elementWiseTimes( scaledinput, upper/ (max-min) );
 
         return scaledinput;
     }
@@ -232,7 +240,7 @@ var Bagel = (function() {
         if (angles.length != frequencies.length) {throw new Error("Bagel.plaidImg:: There must be as many angles as frequencies.");};
         if (radius <= 0) {throw new Error("Bagel.plaidImg:: Radius must be larger than zero");};
 
-        var plaid = Bagel.emptyImg( dims, 0 );
+        var plaid = Bagel.emptyImg( dims, 255/2 );
         var nplaid = 0;
         var cntr = dims[0]/2+1; //center with +1
 
@@ -242,31 +250,30 @@ var Bagel = (function() {
                 //console.log(cntr + Math.ceil(Math.sin(angles[i]) * frequencies[i]/2-0.0001)); //caliss JS pas capable d'arrondir comme du monde...
                 idx1 = (cntr + Math.ceil(Math.sin(angles[i]) * frequencies[i]/2-0.0001)) * dims[0] + ( cntr + Math.ceil(Math.cos(angles[i]) * frequencies[i]/2-0.0001) ) ;
                 plaidLayer[ idx1 - 1 ] = new Bagel.Complex(1, 0);
-                
                 idx2 = (cntr - Math.floor(Math.sin(angles[i]) * frequencies[i]/2+0.0001)) * dims[0] + ( cntr - Math.floor(Math.cos(angles[i]) * frequencies[i]/2+0.0001) ) ;
                 plaidLayer[ idx2 -1 ] = new Bagel.Complex(1, 0);
                 //console.log(idx1,idx2);
                 plaidLayer = Bagel.invFFT2D( plaidLayer );
                 plaidLayer = plaidLayer.map( x => x.magnitude() ); //remove phase information
-                plaidTempMax = Math.max.apply(null,plaidLayer);
-                plaidLayer = Bagel.elementWiseTimes(plaidLayer, 255/plaidTempMax);
+                plaidLayer = Bagel.rescale( plaidLayer );  // onto 0..255
                 plaid = Bagel.elementWisePlus(plaid, plaidLayer);
                 nplaid ++;
             }
         };
-        if (nplaid > 0) { plaid = Bagel.elementWiseTimes( plaid, 1/nplaid); };
-
-        plaid  = Bagel.elementWisePlus( plaid, -255/2 );
+        if (nplaid > 0) { plaid = Bagel.elementWiseTimes( plaid, 1/(nplaid+0.5)); }; //0..255
+        plaid  = Bagel.elementWisePlus( plaid, -255/2 );                             //-255/2 .. +255/2
         filter = Bagel.gaussFilter( dims, radius );
         plaid  = Bagel.elementWiseTimes( plaid, filter );
-        plaid  = Bagel.elementWisePlus( plaid, +255/2 );
+        plaid  = Bagel.elementWisePlus( plaid, +255/2 );                             //0..255
+
+// not symmetrically located??
+                    mn = Bagel.min(plaid.map(x => x.magnitude() ) );
+                    mx = Bagel.max(plaid.map(x => x.magnitude() ) );
+if (nplaid > 0) { var tt = (255-mx)/2 - (mn-0)/2;
+plaid  = Bagel.elementWisePlus( plaid, tt ); }
 
         return plaid;    
     }
-
-
-
-
 
     function gaborImg( dims, angles, frequencies, radius ) {
         // Generate a complex array of gray-level pixels coding a gabor from superposition
@@ -300,11 +307,6 @@ var Bagel = (function() {
 
         return gabor;    
     }
-
-
-
-
-
 
     function letterImg( dims, letter ) {
         // Generate a complex array of b/w pixels coding a given letter.
@@ -394,11 +396,11 @@ var Bagel = (function() {
         if (b <= 0) {throw new Error("Bagel.bagelSampler:: Sample size b must be larger than zero");};
         if (k <= 0) {throw new Error("Bagel.bagelSampler:: Smooth parameter k must be larger than zero");};
 
-        w = dims[0]/2;    // half width of the image
+        w = dims[0]/2;  // half width of the image
         freqs = [];     // a vector with the b frequencies sampled
         indicator = []; // a vector of 0s with 1s where a freq has been sampled
         temp = [];
-        for (var i = 0; i <= k*Math.log2(2*w); i++) { 
+        for (var i = 0; i <= k*Math.log2(2*w)+1; i++) { 
             temp.push(round(i,3)); 
             indicator.push(0);
         };
@@ -442,7 +444,7 @@ var Bagel = (function() {
                 out[ k*dims[1] + l ] = curve[Math.max(d,1)];
             }
         };
-
+        out = rescale(out, 1); // top the filter to 1
         out = out.map( x => new Complex( x, 0 ) );
         return out;
     };
@@ -491,6 +493,12 @@ var Bagel = (function() {
             return Math.round(mult*n)/mult;
         }
     };
+    function min(numbers) {
+        return Math.min.apply(null, numbers)
+    }
+    function max(numbers) {
+        return Math.max.apply(null, numbers)
+    }
     function median(numbers) {
         // see https://stackoverflow.com/a/53660837/5181513
         if(numbers.length === 0) throw new Error("Bagel.median:: No inputs to compute median");
@@ -532,6 +540,19 @@ var Bagel = (function() {
             out[randomIndex]  = temporaryValue;
         }
         return out;
+    }
+    function imageDiags( image, label ) {
+        if (image.constructor.name === "Array") {
+            var dims = Math.sqrt( image.length );
+            var temp = image;
+            if (image[0].constructor.name === "Complex") { 
+                temp = temp.map( x=>x.magnitude() );
+            };
+            console.log( "   ", label, ": ");
+            console.log( "      => type      = ", image[0].constructor.name);
+            console.log( "      => Dimension = ", dims);
+            console.log( "      => Min, med, max  = ", [Math.min.apply(null, temp), Bagel.median(temp), Math.max.apply(null, temp)] );
+        }
     }
 
 
@@ -657,10 +678,14 @@ var Bagel = (function() {
         Complex:            Complex,        // class to store complex number
 
         round:              round,          // round number to a certain number of decimals
+        min:                min,            // shorter than Math.min.apply(null, image)
+        max:                max,
         median:             median,         // compute the median of an array
         transpose:          transpose,      // transpose a square maxtrix stored in an array
         shuffle:            shuffle,        // randomize the items' order in an array
+        imageDiags:         imageDiags,     // some basic diagnostic on the image content
 
+        truncate:           truncate,       // truncate entries of a real matrix between lower and upper (default 0 and 255)
         rescale:            rescale,        // rescale between 0 and 255 the items from an array
         removeDC:           removeDC,       // fitler out the center of a FFT image
         FFT1D:              FFT1D,          // perform fast-Fourier transfomr on a vector
@@ -687,3 +712,5 @@ var Bagel = (function() {
         
     };
 })();
+
+console.log( Bagel.version() );
