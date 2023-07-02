@@ -98,6 +98,15 @@ var Bagel = (function() {
 
         return scaledinput;
     }
+    function recenter( input, center ) {
+        // This function changes the pixel values so that its mean is the center (default 255/2).
+        // The input is assumed a square image stored in an array.
+        mn = Bagel.mean( input );
+        if (center === undefined) {center = 255/2;}
+        centeredinput = Bagel.elementWisePlus( input, center-min );
+
+        return centeredinput;
+    }
     function removeDC( input ) {
         // Ths function filters out the central, '0-frequency', aka DC, component.
         // This is only to allow better visualization of the FFT: the DC is typically
@@ -499,6 +508,9 @@ plaid  = Bagel.elementWisePlus( plaid, tt ); }
     function max(numbers) {
         return Math.max.apply(null, numbers)
     }
+    function mean(numbers) {  //  inspired by https://stackoverflow.com/a/62372003/5181513
+        return numbers.reduce((acc,x)=>(acc+x), 0) / numbers.length;
+    }
     function median(numbers) {
         // see https://stackoverflow.com/a/53660837/5181513
         if(numbers.length === 0) throw new Error("Bagel.median:: No inputs to compute median");
@@ -551,7 +563,7 @@ plaid  = Bagel.elementWisePlus( plaid, tt ); }
             console.log( "   ", label, ": ");
             console.log( "      => type      = ", image[0].constructor.name);
             console.log( "      => Dimension = ", dims);
-            console.log( "      => Min, med, max  = ", [Math.min.apply(null, temp), Bagel.median(temp), Math.max.apply(null, temp)] );
+            console.log( "      => Min, med/mean max  = ", [Math.min.apply(null, temp), Bagel.median(temp), Bagel.mean(temp), Math.max.apply(null, temp)] );
         }
     }
 
@@ -681,12 +693,14 @@ plaid  = Bagel.elementWisePlus( plaid, tt ); }
         min:                min,            // shorter than Math.min.apply(null, image)
         max:                max,
         median:             median,         // compute the median of an array
+        mean:               mean,
         transpose:          transpose,      // transpose a square maxtrix stored in an array
         shuffle:            shuffle,        // randomize the items' order in an array
         imageDiags:         imageDiags,     // some basic diagnostic on the image content
 
         truncate:           truncate,       // truncate entries of a real matrix between lower and upper (default 0 and 255)
         rescale:            rescale,        // rescale between 0 and 255 the items from an array
+        recenter:           recenter,       // move the pixels so that the mean is center (default 255/2)
         removeDC:           removeDC,       // fitler out the center of a FFT image
         FFT1D:              FFT1D,          // perform fast-Fourier transfomr on a vector
         invFFT1D:           invFFT1D,       // perform an inverse fast-Fourier transform on a vector
