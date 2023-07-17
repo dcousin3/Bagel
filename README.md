@@ -27,7 +27,7 @@ One exception is the function `invFFT_1D_radix2` which is distributed under a MI
 ## References
 
 Cousineau, D., & Collin, C. (2023) Bagel: JavaScript library for image manipulation [software]
-    version 1.3.1. URL: http://dcousin3.github.io/Bagel/
+    version 1.3.3. URL: http://dcousin3.github.io/Bagel/
 
 Willenbockel et al. (2010) Journal of Experimental Psychology: Human perception & 
 		performance. doi: 10.1037/a0016465 

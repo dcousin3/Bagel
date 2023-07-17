@@ -40,6 +40,7 @@
 //                  (relative to a 0..1 coding) when non-linear transforms are used.
 //      1.3.2 (2023.06.17): Canvas are rounding pixels so we bypass them for storing images
 //      1.3.3 (2023.07.02): Added truncate, rescale and removeDC
+//      1.3.4 (2023.07.07): Added parameters to make letterImg
 //==========================================================================================
 
 //==========================================================================================
@@ -73,7 +74,7 @@
 
 var Bagel = (function() {
 
-    function version() {return "Bagel version 1.3.3"};
+    function version() {return "Bagel version 1.3.4"};
 
 
     //***************************************************************************************
@@ -275,11 +276,11 @@ var Bagel = (function() {
         plaid  = Bagel.elementWiseTimes( plaid, filter );
         plaid  = Bagel.elementWisePlus( plaid, +255/2 );                             //0..255
 
-// not symmetrically located??
-                    mn = Bagel.min(plaid.map(x => x.magnitude() ) );
-                    mx = Bagel.max(plaid.map(x => x.magnitude() ) );
-if (nplaid > 0) { var tt = (255-mx)/2 - (mn-0)/2;
-plaid  = Bagel.elementWisePlus( plaid, tt ); }
+        // not symmetrically located??
+        mn = Bagel.min(plaid.map(x => x.magnitude() ) );
+        mx = Bagel.max(plaid.map(x => x.magnitude() ) );
+        if (nplaid > 0) { var tt = (255-mx)/2 - (mn-0)/2;
+        plaid  = Bagel.elementWisePlus( plaid, tt ); }
 
         return plaid;    
     }
@@ -317,23 +318,30 @@ plaid  = Bagel.elementWisePlus( plaid, tt ); }
         return gabor;    
     }
 
-    function letterImg( dims, letter ) {
+    function letterImg( dims, letter, txtformat, bgcolor ) {
         // Generate a complex array of b/w pixels coding a given letter.
         // Uses an in-memory canvas for its ability to draw text
+        if (txtformat === undefined) {txtformat = "bold 128px Arial"; };
+        if (bgcolor === undefined) {bgcolor = 255; }; // actually only gray level from 0:black to 255:white
+
+        // locate a font dimension in px in the format
+        var size = txtformat.split(/\s/).map( x => parseInt(x, 10) ).filter( x => x)[0];
+        //console.log("located font size: ", size );
+
         var inMemoryCanvas = document.createElement('canvas');
         inMemoryCanvas.width  = dims[0];
         inMemoryCanvas.height = dims[1];
         var imc = inMemoryCanvas.getContext('2d'); 
         imc.textBaseline = "top";
-        imc.font = "bold 128px Arial";  // change as desired
-        imc.clearRect(0,0, dims[0], dims[1] ); // erase all
-        imc.fillText(letter, (dims[1] - imc.measureText(letter).width)/2, 64 ); //64 //138 lignes visibles seulement?
+        imc.font      = txtformat;              // change as desired
+        imc.clearRect(0,0, dims[0], dims[1] );  // erase all
+        imc.fillText(letter, (dims[1] - imc.measureText(letter).width)/2, (dims[0]-0.75*size)/2 );
         var letterImageData = imc.getImageData(0, 0, dims[0], dims[1] ).data;
         // remove color
         var bwletterImageData = [];
         for (var i = 0; i < letterImageData.length; i+=4) {
-            // it is bizzarely coded with the transparent layer only...
-            bwletterImageData[i/4] = 255-letterImageData[i+3] ;
+            // it is bizzarely coded with the transparent layer only... the letters are always black
+            bwletterImageData[i/4] = Math.min(bgcolor, 255-letterImageData[i+3] );
         }
         // convert to complex
         bwletterImageData = bwletterImageData.map( x => new Bagel.Complex(x, 0) )  ;
@@ -409,7 +417,7 @@ plaid  = Bagel.elementWisePlus( plaid, tt ); }
         freqs = [];     // a vector with the b frequencies sampled
         indicator = []; // a vector of 0s with 1s where a freq has been sampled
         temp = [];
-        for (var i = 0; i <= k*Math.log2(2*w)+1; i++) { 
+        for (var i = 0; i <= k*Math.log2(2*w); i++) { 
             temp.push(round(i,3)); 
             indicator.push(0);
         };
