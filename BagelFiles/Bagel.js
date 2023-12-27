@@ -14,37 +14,41 @@
 //                BY: cite this if you use Bagel according to academic standards            //
 //                NC: absolutely no commercial use without permission.                      //
 //             under MIT for invFFT_1D_radix2                                               //
-// Additionally, HU (humans only) which means:                                              //
-//                non-humans (bots and automated web scraping algorithms) are not allowed   //
-//                to use, adapt, or modify code here unless explicitely approved by the     //
-//                right holders.                                                            //
+// Additionally,  HU (humans only) which means:                                             //
+//                  non-humans (bots and automated web scraping algorithms) are not allowed //
+//                  to use, adapt, or modify code here unless explicitely approved by the   //
+//                  right holders.                                                          //
+//==========================================================================================//
+
+//==========================================================================================//
+// Preliminary work by Anthony Liu:                                                         //
+//     https://github.com/turbomaze/JS-Fourier-Image-Analysis                               //
+// Massive changes by Denis Cousineau.                                                      //
+//     In particular, the shift was not working; and the FFT/invFFT was for 1D vectors only.//
+//==========================================================================================//
+
+//==========================================================================================//
+// Version history                                                                          //
+//      1.2.0 (2023.05.18): Original version                                                //
+//               Detected that JS-Fourier-Image-Analysis was incorrect in many ways.        //
+//               For simplicity, the NxN image matrix is stored in a vector of length N*N.  //
+//      1.3.0 (2023.05.22): Added contrast manipulation in the GUI                          //
+//               Use (r)escaling and (m)edian equalization;                                 //
+//      1.3.1 (2023.06.16): Triple-checked FFT with Mathematica                             //
+//               The FFT functions assumes the signal processing parameterization;          //
+//               Also, the matrices are coded 0..255 which has implications                 //
+//               (relative to a 0..1 coding) when non-linear transforms are used.           //
+//      1.3.2 (2023.06.17): Canvas are rounding pixels so we bypass them for storing images //
+//      1.3.3 (2023.07.02): Added truncate, rescale and removeDC                            //
+//            Version 1.3.3 was used succesfully for a real experiment Study2a              //
+//      1.4.0 (2023.12.27): Added shifted gaussian filter and                               //
+//               handling complex in elementwise operations                                 //
+//            Version 1.4.0 was used for a real experiment Study2b                          //
 //==========================================================================================//
 
 //==========================================================================================
-// Preliminary work by Anthony Liu:
-//     https://github.com/turbomaze/JS-Fourier-Image-Analysis
-// Massive changes by Denis Cousineau.
-//     In particular, the shift was not working; and the FFT/invFFT was for 1D vectors only.
-//==========================================================================================
-
-//==========================================================================================
-// Version history
-//      1.2.0 (2023.05.18): Original version
-//                  Detected that JS-Fourier-Image-Analysis was incorrect in many ways.
-//                  For simplicity, the NxN image matrix is stored in a vector of length N*N.
-//      1.3.0 (2023.05.22): Added contrast manipulation in the GUI
-//                  Use (r)escaling and (m)edian equalization;
-//      1.3.1 (2023.06.16): Triple-checked FFT with Mathematica 
-//                  The FFT functions assumes the signal processing parameterization;
-//                  Also, the matrices are coded 0..255 which has implications
-//                  (relative to a 0..1 coding) when non-linear transforms are used.
-//      1.3.2 (2023.06.17): Canvas are rounding pixels so we bypass them for storing images
-//      1.3.3 (2023.07.02): Added truncate, rescale and removeDC
-//      1.3.4 (2023.07.07): Added parameters to make letterImg
-//==========================================================================================
-
-//==========================================================================================
 // Bagel is a JS library with relevant functions to perform manipulations on images.
+//==========================================================================================
 // In particular, we have:
 //      for image transforms: (all transforms returns arrays of Complex) 
 //          FFT2D               a 2D fast fourier transform
@@ -74,7 +78,7 @@
 
 var Bagel = (function() {
 
-    function version() {return "Bagel version 1.3.4"};
+    function version() {return "Bagel version 1.4.0"};
 
 
     //***************************************************************************************
@@ -104,7 +108,7 @@ var Bagel = (function() {
         // The input is assumed a square image stored in an array.
         mn = Bagel.mean( input );
         if (center === undefined) {center = 255/2;}
-        centeredinput = Bagel.elementWisePlus( input, center-min );
+        centeredinput = Bagel.elementWisePlus( input, center-mn );
 
         return centeredinput;
     }
@@ -322,11 +326,11 @@ var Bagel = (function() {
         // Generate a complex array of b/w pixels coding a given letter.
         // Uses an in-memory canvas for its ability to draw text
         if (txtformat === undefined) {txtformat = "bold 128px Arial"; };
-        if (bgcolor === undefined) {bgcolor = 255; }; // actually only gray level from 0:black to 255:white
+        if (  bgcolor === undefined) {bgcolor = 255; }; // actually only gray level from 0:black to 255:white
 
-        // locate a font dimension in px in the format
+        // locate a font dimension in px in the format from the first numeric found
         var size = txtformat.split(/\s/).map( x => parseInt(x, 10) ).filter( x => x)[0];
-        //console.log("located font size: ", size );
+        //console.log("Bagel:: located font size: ", size );
 
         var inMemoryCanvas = document.createElement('canvas');
         inMemoryCanvas.width  = dims[0];
@@ -377,15 +381,16 @@ var Bagel = (function() {
         return out
     }
 
-     function gaussFilter( dims, sigma ) {
-        // A soft filter: a gaussian function centered on zero with radius sigma
+     function gaussFilter( dims, sigma, cntr ) {
+        // A soft filter: a gaussian function centered on cntr with radius sigma
         // Use a negative sigma to have the complement.
+        if (cntr === undefined) { cntr = [0,0]; }
         out = [];
         radius = Math.abs(sigma);
         inout  = Math.sign(sigma);  // +1 => 0*255 + 1*C; -1 => 1*255 -1*C
         for (var k = -dims[0]/2; k < dims[0]/2; k++) {
             for (var l = -dims[1]/2; l < dims[1]/2; l++) {
-                reel =  round(Math.exp(-(Math.pow(k,2)+Math.pow(l,2) )/ Math.pow(radius,2)),14);
+                reel =  round(Math.exp(-(Math.pow( (k-cntr[0]),2)+Math.pow( (l-cntr[1]),2) )/ Math.pow(radius,2)),14);
                 out[ (k+dims[0]/2)* dims[0] + l+dims[0]/2 ] = 
                     new Bagel.Complex( (1-inout)/2 * 1 + inout * reel, 0 )
             }
@@ -421,6 +426,7 @@ var Bagel = (function() {
             temp.push(round(i,3)); 
             indicator.push(0);
         };
+
         temp = shuffle(temp);
         for (var i = 0; i < b; i++) {
             freqs.push( 2**(temp[i]/k) ) ;
@@ -563,15 +569,15 @@ var Bagel = (function() {
     }
     function imageDiags( image, label ) {
         if (image.constructor.name === "Array") {
-            var dims = Math.sqrt( image.length );
+            var dim  = Math.sqrt( image.length );
             var temp = image;
             if (image[0].constructor.name === "Complex") { 
                 temp = temp.map( x=>x.magnitude() );
             };
             console.log( "   ", label, ": ");
             console.log( "      => type      = ", image[0].constructor.name);
-            console.log( "      => Dimension = ", dims);
-            console.log( "      => Min, med/mean max  = ", [Math.min.apply(null, temp), Bagel.median(temp), Bagel.mean(temp), Math.max.apply(null, temp)] );
+            console.log( "      => Dimension = ", dim);
+            console.log( "      => Min, med/mean, max  = ", [Math.min.apply(null, temp), Bagel.median(temp), Bagel.mean(temp), Math.max.apply(null, temp)] );
         }
     }
 
@@ -583,7 +589,7 @@ var Bagel = (function() {
     //***************************************************************************************
     function elementWisePlus(a,b){
         if ((a.constructor.name != "Array")) {
-            throw new Error("Bagel.elementWisePlus: First argument must be an array...");
+            throw new Error("Bagel.elementWisePlus: First argument must be an array of number/complex...");
         };
         if (a[0].constructor.name === "Complex") {
             if (b.constructor.name === "Number") {
@@ -591,13 +597,17 @@ var Bagel = (function() {
             } else if (b.constructor.name === "Array") {
                 return a.map( (x,i) => x.plus( b[i] ) );
             } else {
-                throw new Error("Bagel.elementWisePlus: Second argument must be a scalar or an array...");
+                throw new Error("Bagel.elementWisePlus: Second argument must be a scalar or an array of number/complex...");
             }
         } else if (a[0].constructor.name === "Number") {
             if (b.constructor.name === "Number") {
                 return a.map( (x,i) => x + b  );
             } else if (b.constructor.name === "Array") {
-                return a.map( (x,i) => x + b[i]  );
+                if (b[0].constructor.name === "Number") {
+                    return a.map( (x,i) => x + b[i]  );
+                } else {
+                    return a.map( (x,i) => b[i].plus( x )  );
+                }
             } else {
                 throw new Error("Bagel.elementWisePlus: Second argument must be a scalar or an array...");
             }
@@ -619,7 +629,11 @@ var Bagel = (function() {
             if (b.constructor.name === "Number") {
                 return a.map( (x,i) => x * b  );
             } else if (b.constructor.name === "Array") {
-                return a.map((x,i) => x * b[i] );
+                if (b[0].constructor.name === "Number") {
+                    return a.map((x,i) => x * b[i] );
+                } else {
+                    return a.map((x,i) => b[i].times( x ) );
+                }
             } else {
                 throw new Error("Bagel.elementWiseTimes: Second argument must be a scalar or an array...");
             } 
@@ -635,7 +649,7 @@ var Bagel = (function() {
             } else if ((b.constructor.name === "Array")&&(b[0].constructor.name === "Number")) {
                 return a.every( (x,i) => x === b[i])
             } else {
-                throw new Error("Bagel.elementWiseEqual: Second argument must be a scalar or an array of scalar to match the first argument...");
+                throw new Error("Bagel.elementWiseEqual: Second argument not a Number or an array of Number to match the first argument...");
             }
         } else if (a[0].constructor.name === "Complex") {
             if (b.constructor.name === "Complex") {
@@ -643,7 +657,7 @@ var Bagel = (function() {
             } else if ((b.constructor.name === "Array")&&(b[0].constructor.name === "Complex")) {
                 return (a.every( (x,i) => x.real === b[i].real) && a.every( (x,i) => x.imag === b[i].imag));
             } else {
-                throw new Error("Bagel.elementWiseEqual: Second argument must be a complex or an array of complex to match the first argument...");
+                throw new Error("Bagel.elementWiseEqual: Second argument not a Complex or an array of Complex to match the first argument...");
             }
         }
     };
@@ -665,17 +679,21 @@ var Bagel = (function() {
             return new Complex( this.real, -this.imag );
         };
         plus = function(z) {
-            if ( z.constructor.name === "Complex" ) { // complex multiplication
+            if ( z.constructor.name === "Complex" ) { // complex plus
                 return new Complex( this.real+z.real, this.imag+z.imag );
-            } else { // scalar plus
+            } else if (z.constructor.name === "Number") { // scalar plus
                 return new Complex( this.real+z, this.imag);
+            } else { // unhandled case
+                throw new Error("Complex.plus: argument must be Complex or Number...");
             }
         };
         minus = function(z) {
-            if ( z.constructor.name === "Complex" ) { // complex multiplication
-                return new Complex( this.real-z.real, this.imag-z.imag );
-            } else { // scalar minus
+            if ( z.constructor.name === "Complex" ) { // complex subtraction
+                return new Complex( this.real-z.real, this.imag-z.imag ); 
+            } else if ( z.constructor.name === "Number" ) { // scalar minus
                 return new Complex( this.real-z, this.imag );
+            } else { // unhandled case
+                throw new Error("Complex.minus: argument must be Complex or Number...");
             }
         };
         times = function(z) {
@@ -683,8 +701,10 @@ var Bagel = (function() {
                 var rePart = this.real*z.real - this.imag*z.imag;
                 var imPart = this.real*z.imag + this.imag*z.real;
                 return new Complex(rePart, imPart);
-            } else { // scalar multiplication
+            } else if ( z.constructor.name === "Number") { // scalar multiplication
                 return new Complex( z*this.real, z*this.imag);
+            } else { // unhandled case
+                throw new Error("Complex.minus: argument must be Complex or Number...");
             }
         };
     }
